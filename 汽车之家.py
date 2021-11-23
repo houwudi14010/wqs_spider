@@ -102,11 +102,13 @@ headers = {
 }
 import time
 def dizhi():
-    res = requests.get('https://club.autohome.com.cn/frontapi/data/page/club_get_topics_list?page_num=2&page_size=50&club_bbs_type=c&club_bbs_id=5395&club_order_type=1')
+    res = requests.get('https://club.autohome.com.cn/frontapi/data/page/club_get_topics_list?page_num=1&page_size=50&club_bbs_type=c&club_bbs_id=5395&club_order_type=1')
     content = res.text
+
     url = re.compile('"pc_url":"http(.*?)",').findall(str(content))
     title = re.compile('"title":"(.*?)",').findall(str(content))
-    for til,ur in zip(title,url):
+    author = re.compile('"author_name":"(.*?)",').findall(str(content))
+    for til,ur,au in zip(title,url,author):
         try:
             print(ur)
             ur = 'https'+ur
@@ -162,7 +164,7 @@ def dizhi():
             data.append(InsertOne(
                 {"url": ur, "title": til, "aid": aid, "content": articleText, "site": site,
                  "pub_time": pubtime[0], "push_state": pushState, "site_id": siteId,
-                 "download_Time": downloadTime}))
+                 "download_Time": downloadTime,"author":au}))
             insertdb(data)
             huitie = re.compile('<ul class="reply-wrap".*?>([\s\S]*?)</section>').findall(str(oc))
             litext = re.compile('<li[\s\S]*?class="js-reply-floor-container "[\s\S]*?>([\s\S]*?)</li>').findall(str(huitie))

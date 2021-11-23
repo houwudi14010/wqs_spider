@@ -1,16 +1,33 @@
-# This is a sample Python script.
+import datetime
+import threading
+import subprocess
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import requests
+from json_extract import GetValue2
+from pymongo import InsertOne, collection, MongoClient
+from selenium import webdriver  # 驱动浏览器
+from selenium.webdriver.support.wait import WebDriverWait  # 等待页面加载完毕 寻找某些元素
+import time
+import datetime
+import re
+import threading
+import time
+import traceback
+import requests
+from bs4 import BeautifulSoup
+from pymongo import InsertOne, collection, MongoClient
+# import test
+# class Login(test.test):
+#     pass
+# if __name__ == '__main__':
+#     Login()
 
+aa = []
+for i in range(1,1001):
+    for b in range(1,i):
+        if i % b == 0:
+            aa.append(b)
+    if sum(aa) == i:
+        print("{}是完数 因子包括{}".format(i,aa))
+    aa.clear()
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/

@@ -5,21 +5,10 @@
 # @Version：V 0.1
 # @File : article_dongchedi.py
 # @desc :
-import requests
 import datetime
-import urllib
 from pymongo import InsertOne, collection, MongoClient
 import requests
 import re
-from lxml import html
-from fontTools.ttLib import TTFont
-import lxml.html
-from bs4 import BeautifulSoup
-import lxml.html
-from lxml import etree
-from soupsieve.util import lower
-
-import AutoHomeFont
 headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36',
 }
@@ -29,23 +18,37 @@ print(client)  # 成功则说明连接成功
 db = client.admin  # 连接对应的数据库名称，系统默认数据库admin
 db.authenticate('admin', 'mingtai159888')
 collection = db.article_list_dongche
-def dataIns(pubTime,shi):
+def dataInss(pubTime):
+    tians = 99
     if '时' in pubTime:
-        tian = 1
+        tians = 0
     elif '分' in pubTime:
-        tian = 1
+        tians = 0
     elif '秒' in pubTime:
-        tian = 1
-    elif '天' in pubTime:
-        tian = int(shi)
+        tians = 0
+    elif '前天' in pubTime:
+        tians = 2
+    elif '昨天' in pubTime:
+        tians = 1
     elif '月' in pubTime:
-        tian = int(shi) * 30
+        tians = 30
     elif '年' in pubTime:
-        tian = int(shi) * 365
-    threeDayAgo = datetime.datetime.today() - datetime.timedelta(tian)
-    pubTimes = threeDayAgo.strftime("%Y-%m-%d %H:%M:%S")
+        tians = 365
+    elif '刚刚' in pubTime:
+        tians = 0
+    elif '天前' in pubTime:
+        aums = re.compile('(.*?)天前').findall(str(pubTime))
+        tians = int(aums[0])
+    else:
+        downloadTime = datetime.datetime.now().strftime('%Y')
+        pubTime = str(downloadTime)+'-'+pubTime+" 00:00:00"
+    if tians == 99:
+        return pubTime
+    else:
+        threeDayAgo = datetime.datetime.today() - datetime.timedelta(tians)
+        pubTimes = threeDayAgo.strftime("%Y-%m-%d")
+        pubTimes = pubTimes+" 00:00:00"
     return pubTimes
-
 
 def insertdb (data):
     downloadTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -54,46 +57,55 @@ def insertdb (data):
         print('添加完成'+downloadTime)
     except:
         print('重复添加'+downloadTime)
-response = requests.get('https://www.dongchedi.com/community/4080', headers=headers)
-content = response.content.decode('utf-8')
-urlList = re.compile('href="/ugc/article/(.*?)"').findall(str(content))
-for ur in urlList:
-    articleUrl = "https://www.dongchedi.com/ugc/article/"+ur
-    articleRequests = requests.get(articleUrl)
-    articleContent = articleRequests.content.decode('utf-8')
-    mainPost = re.compile('<div class="jsx-\d{5,}">([\s\S]*?.)</div></div></div>').findall(str(articleContent))
-    pubTime = re.compile('<p class="jsx-\d{1,}">(.*?)<!-- -->发布<!-- -->于').findall(str(articleContent))
-    shi = re.compile('(\d{1,}).*?前').findall(str(pubTime[0]))
-    pubTimes = dataIns(pubTime[0],shi[0])
 
-    articleText = re.compile('<div class="jsx-\d{1,} content tw-text-12.*?>([\s\S]*?.)</div></div></div>').findall(str(articleContent))
-    #提取文章内容中的汉字 当做标题
-    titles = ''
-    title = re.compile('([\u4e00-\u9fa5]{1,})').findall(str(articleText))
-    for ti in title:
-        titles += ti+" "
-    print(ur)
-    site = "懂车帝"
-    siteId = 1050203
-    pushState = 0
-    downloadTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    data = []
-    data.append(InsertOne(
-        {"url": ur, "title": titles, "aid": ur, "content": articleText[0], "site": site,
-         "pub_time": pubTimes, "push_state": pushState, "site_id": siteId,"download_Time": downloadTime}))
-    insertdb(data)
-    replyContent = re.compile('<ul class="jsx-\d{1,}">([\s\S]*?)<div class="jsx-\d{1,} tw-flex tw-text-12').findall(str(articleContent))
-    replyText = re.compile('<li class="jsx-\d{1,} tw-mt-\d">([\s\S]*?.)</li>').findall(str(replyContent))
-    replyTexts = re.compile('<span class="jsx-\d{1,}1 jsx-\d{1,} tw-text-common-black">([\s\S]*?)</span>').findall(str(replyContent))
-    replyPubTime = re.compile('发表于<!-- -->(\d{1,}).*?前').findall(str(replyContent))
-    replyPubTimes = re.compile('发表于<!-- -->(.*?)前').findall(str(replyContent))
-    replyPubTimes = dataIns(replyPubTimes[0],replyPubTimes[0])
-    replyPubTimess = dataIns(pubTime[0], shi[0])
-    for rt,rpt in zip(replyTexts,replyPubTime):
-        datas = []
-        datas.append(InsertOne(
-            {"url": ur, "title": replyTexts[0], "aid": ur, "content": replyTexts[0], "site": site,
-             "pub_time": replyPubTimess, "push_state": pushState, "site_id": siteId, "download_Time": downloadTime}))
-        insertdb(datas)
-    print()
-print()
+def func():
+    response = requests.get('https://www.dongchedi.com/community/4080', headers=headers)
+    content = response.content.decode('utf-8')
+    urlList = re.compile('href="/ugc/article/(.*?)"').findall(str(content))
+    for ur in urlList:
+        try:
+            articleUrl = "https://www.dongchedi.com/ugc/article/"+ur
+            articleRequests = requests.get(articleUrl)
+            articleContent = articleRequests.content.decode('utf-8')
+            pubTime = re.compile('<p class="jsx-\d{1,}">(.*?)<!-- -->发布<!-- -->于').findall(str(articleContent))
+            authorName = re.compile('"name":"(.*?)","media_id').findall(str(articleContent))
+            pubTimes = dataInss(pubTime[0])
+            articleText = re.compile('<div class="jsx-\d{1,} content tw-text-12.*?>([\s\S]*?.)</div></div></div>').findall(str(articleContent))
+            titles = re.compile('<title>(.*?)</title>').findall(str(articleContent))
+            site = "懂车帝"
+            siteId = 1050203
+            pushState = 0
+            downloadTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data = []
+            data.append(InsertOne(
+                {"url": articleUrl, "title": titles[0], "aid": ur, "content": articleText[0], "site": site,"author":authorName[0],
+                 "pub_time": pubTimes, "push_state": pushState, "site_id": siteId,"download_Time": downloadTime}))
+            insertdb(data)
+        except Exception as err:
+            import traceback
+            traceback.print_exc()
+            pass
+        try:
+            replyContent = re.compile('<ul class="jsx-\d{1,}">([\s\S]*?)<div class="jsx-\d{1,} tw-flex tw-text-12').findall(str(articleContent))
+            replyTexts = re.compile('<span class="jsx-\d{1,}1 jsx-\d{1,} tw-text-common-black">([\s\S]*?)</span>').findall(str(replyContent))
+            replyPubTime = re.compile('发表于<!-- -->(.*?)</span>').findall(str(replyContent))
+            author = re.compile('title="(.*?)个人主页 "').findall(str(replyContent))
+            for rt, rpt,au in zip(replyTexts,replyPubTime,author):
+                try:
+                    replyPubTimes = dataInss(rpt)
+                    datas = []
+                    datas.append(InsertOne(
+                        {"url": articleUrl, "title": titles[0], "aid": rt, "content": rt, "site": site,"author":au,
+                         "pub_time": replyPubTimes, "push_state": pushState, "site_id": siteId, "download_Time": downloadTime}))
+                    insertdb(datas)
+                except Exception as err:
+                    import traceback
+                    traceback.print_exc()
+                    pass
+        except Exception as err:
+            import traceback
+            traceback.print_exc()
+            pass
+if __name__ == "__main__":
+    while (True):
+        func()
